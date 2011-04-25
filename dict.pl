@@ -9,13 +9,14 @@
 #   2011-04-21: v1.1，1)加入手动输入记录，及查询、删除等项；
 #                     2)加入Google翻译；
 #   2011-04-22: v1.2.1, 修改read命令；
-#
+#   2011-04-25: v1.2.2, 修改--loop中的输入处理；
 
 
 
 
 $COLOR_CYAN  = "\e[36;1m";
 $COLOR_QRAY  = "\e[30;1m";
+$COLOR_RED   = "\e[31;1m";
 $COLOR_NONE  = "\e[0m";
 $word_dir = $ENV{DICT_DATA} || "$ENV{HOME}/data/dict"; # 优先使用环境变量的值
 $dict_tmp = "/tmp";
@@ -28,7 +29,7 @@ $word_str = '';
 
 sub Usage
 {
-    die <<'eof';
+    print <<'eof';
 
  Usage: dict.pl [word|phrase] [--loop|--history|--add title|--del title]
    word|phrase : 待查询单词或短语
@@ -37,10 +38,22 @@ sub Usage
    --add title : 手动加入记录，以title为标题；
    --del title : 删除标题为title的记录；
 
-编写：[v1.2.1] [Rocky 2011-04-21] [rocky2shi@126.com]
+编写：[v1.2.2] [Rocky 2011-04-21] [rocky2shi@126.com]
 
 eof
     exit(1);
+}
+
+# 记录查询记录
+sub WriteHistory
+{
+    my $str = $_[0];
+    system <<eof;
+    echo $str >> $history
+    cp $history $tmp_file
+    tail $tmp_file -n 100 > $history    # 限制为100行
+    rm -f $tmp_file
+eof
 }
 
 
@@ -54,7 +67,7 @@ if($ARGV[0] eq '--loop')
     while true;
     do
         read -p '>>> ' -e word;
-        dict.pl ${word[*]};
+        [[ "${word}" != "" ]] && dict.pl ${word[*]};
     done
 eof
     print "\n";
@@ -103,6 +116,13 @@ eof
 }
 
 
+# 以-开始的应为命令（不是查询请求）
+if($ARGV[0] =~ "-")
+{
+    print " $COLOR_RED选项出错：@ARGV\n" . $COLOR_NONE;
+    Usage();
+}
+
 
 # 先查看是否已存在查询单词
 ($word = join("_", @ARGV)) || Usage();
@@ -133,13 +153,13 @@ elsif($result =~ /([0-9]+).(.+)/)
     mv $src_file $dest_file
     touch $dest_file
 
-    echo @ARGV >> $history
-    cp $history $tmp_file
-    tail $tmp_file -n 100 > $history    # 限制为100行
-    rm -f $tmp_file
 eof
+    WriteHistory("@ARGV");
     exit(0);
 }
+
+
+
 
 
 
@@ -274,6 +294,7 @@ if(length($word_str) > 180)
     open(FILE, ">$word_file") || die "$!: $word_file";
     print FILE $word_str;
     close(FILE);
+    WriteHistory("@ARGV");
 }
 else
 {
