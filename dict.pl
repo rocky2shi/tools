@@ -10,6 +10,8 @@
 #                     2)加入Google翻译；
 #   2011-04-22: v1.2.1, 修改read命令；
 #   2011-04-25: v1.2.2, 修改--loop中的输入处理；
+#   2011-04-27: v1.2.3, 加--edit选项
+#
 
 
 
@@ -18,7 +20,7 @@ $COLOR_CYAN  = "\e[36;1m";
 $COLOR_QRAY  = "\e[30;1m";
 $COLOR_RED   = "\e[31;1m";
 $COLOR_NONE  = "\e[0m";
-$word_dir = $ENV{DICT_DATA} || "$ENV{HOME}/data/dict"; # 优先使用环境变量的值
+$word_dir = $ENV{DICT_DATA} || "$ENV{HOME}/.english"; # 优先使用环境变量的值
 $dict_tmp = "/tmp";
 $history = "$word_dir/history.txt";
 $tmp_file = "$dict_tmp/.dict_tmp";
@@ -37,8 +39,9 @@ sub Usage
    --history   : 显示查询记录
    --add title : 手动加入记录，以title为标题；
    --del title : 删除标题为title的记录；
+   --edit title: 编辑标题为title的记录；
 
-编写：[v1.2.2] [Rocky 2011-04-21] [rocky2shi@126.com]
+编写：[v1.2.3] [Rocky 2011-04-21] [rocky2shi@126.com]
 
 eof
     exit(1);
@@ -107,7 +110,7 @@ if($ARGV[0] eq '--del')
 {
     Usage() if($ARGV[1] eq "");
     my @tmp = @ARGV;
-    shift(@tmp); # 去掉--add
+    shift(@tmp); # 去掉--del
     my $word = join("_", @tmp);
     system <<eof;
     cd $word_dir && rm -f [0-9]*.$word && echo "已删除[@tmp]"
@@ -115,6 +118,18 @@ eof
     exit(0);
 }
 
+# 编辑标题词
+if($ARGV[0] eq '--edit')
+{
+    Usage() if($ARGV[1] eq "");
+    my @tmp = @ARGV;
+    shift(@tmp); # 去掉--edit
+    my $word = join("_", @tmp);
+    system <<eof;
+    cd $word_dir && vi [0-9]*.$word
+eof
+    exit(0);
+}
 
 # 以-开始的应为命令（不是查询请求）
 if($ARGV[0] =~ "-")
@@ -284,8 +299,7 @@ $iciba
 $google
 eof
 
-
-if(length($word_str) > 180)
+if(length($word_str) > 170)
 {
     # 显示到前台
     print $word_str;
