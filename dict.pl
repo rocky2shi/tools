@@ -10,6 +10,9 @@
 #                     2)加入Google翻译；
 #   2011-04-22: v1.2.1, 修改read命令；
 #   2011-04-25: v1.2.2, 修改--loop中的输入处理；
+#   2011-05-02: v1.2.3, 1)修改：单词中含有‘-’时，会输出错误提示；
+#                       2)修改默认单词目录；
+#
 
 
 
@@ -18,7 +21,7 @@ $COLOR_CYAN  = "\e[36;1m";
 $COLOR_QRAY  = "\e[30;1m";
 $COLOR_RED   = "\e[31;1m";
 $COLOR_NONE  = "\e[0m";
-$word_dir = $ENV{DICT_DATA} || "$ENV{HOME}/data/dict"; # 优先使用环境变量的值
+$word_dir = $ENV{DICT_DATA} || "$ENV{HOME}/.dict"; # 优先使用环境变量的值
 $dict_tmp = "/tmp";
 $history = "$word_dir/history.txt";
 $tmp_file = "$dict_tmp/.dict_tmp";
@@ -117,7 +120,7 @@ eof
 
 
 # 以-开始的应为命令（不是查询请求）
-if($ARGV[0] =~ "-")
+if($ARGV[0] =~ "^-")
 {
     print " $COLOR_RED选项出错：@ARGV\n" . $COLOR_NONE;
     Usage();
