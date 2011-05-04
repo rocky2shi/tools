@@ -1,9 +1,9 @@
 存入各类小工具
 
 
-dict.pl -- 通过网络查单词
-color.sh -- 终端颜色设置
-g2u.sh -- gb18030转utf8
-u2g.sh -- utf8转gb18030
-new-file.sh -- 新建文件
+dict.pl         -- 通过网络查单词
+color.sh        -- 终端颜色设置
+g2u.sh          -- gb18030转utf8
+u2g.sh          -- utf8转gb18030
+new-file.sh     -- 新建文件
 

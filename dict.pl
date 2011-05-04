@@ -13,6 +13,7 @@
 #   2011-04-27: v1.2.3, 加--edit选项
 #   2011-05-02: v1.2.4, 1)修改：单词中含有‘-’时，会输出错误提示；
 #                       2)修改默认单词目录；
+#   2011-05-04: v1.3, 加入--append选项；
 #
 
 
@@ -35,15 +36,16 @@ sub Usage
 {
     print <<'eof';
 
- Usage: dict.pl [word|phrase] [--loop|--history|--add title|--del title]
-   word|phrase : 待查询单词或短语
-   --loop      : 查询后不退出
-   --history   : 显示查询记录
-   --add title : 手动加入记录，以title为标题；
-   --del title : 删除标题为title的记录；
-   --edit title: 编辑标题为title的记录；
+ Usage: dict.pl [word|phrase] [--loop|--history|--add title|--del title|--append title]
+   word|phrase   : 待查询单词或短语
+   --loop        : 查询后不退出
+   --history     : 显示查询记录
+   --add title   : 手动加入记录，以title为标题；
+   --del title   : 删除标题为title的记录；
+   --edit title  : 编辑标题为title的记录；
+   --append title: 手动添加内容到已存在的词条；
 
-编写：[v1.2.4] [Rocky 2011-04-21] [rocky2shi@126.com]
+编写：[v1.3] [Rocky 2011-05-04] [rocky2shi@126.com]
 
 eof
     exit(1);
@@ -59,6 +61,14 @@ sub WriteHistory
     tail $tmp_file -n 100 > $history    # 限制为100行
     rm -f $tmp_file
 eof
+}
+
+# 取词条文件名（注意，含前缀）
+sub GetWordFile
+{
+    my $word = $_[0];
+    my $result = `cd $word_dir  &&  ls [0-9]*.$word -1 2>/dev/null`;
+    return split(" ", $result);
 }
 
 
@@ -92,7 +102,7 @@ if($ARGV[0] eq '--add')
     Usage() if($ARGV[1] eq "");
     my @word = @ARGV;
     shift(@word); # 去掉--add
-    $word_file = "$word_dir/1." . join("_", @word);
+    my $word_file = "$word_dir/1." . join("_", @word);
     if(-f $word_file)
     {
         print "此标题词已存在，请换另一标题，或先删除已存在标题（使用--del选项）。\n";
@@ -133,6 +143,32 @@ eof
     exit(0);
 }
 
+
+# 手动添加新内容到已存在的词条中
+if($ARGV[0] eq '--append')
+{
+    Usage() if($ARGV[1] eq "");
+    my @word = @ARGV;
+    shift(@word);
+    my $word = join("_", @word);
+    my @tmp = GetWordFile($word);
+    my $word_file = "$word_dir/@tmp"; # 这里@tmp应只有一个词条
+    if(not -f $word_file)
+    {
+        print "此词条[$word]不已存在（可使用--add选项手动新建）。\n";
+        exit(1);
+    }
+    print "请输入内容，按Ctrl+D结束输入。\n";
+    print "==========================================\n";
+    system <<eof;
+    echo                  >>$word_file
+    echo                  >>$word_file
+    echo '###手工添加###' >>$word_file
+    cat                   >>$word_file
+eof
+    exit(0);
+}
+
 # 以-开始的应为命令（不是查询请求）
 if($ARGV[0] =~ "^-")
 {
@@ -140,11 +176,9 @@ if($ARGV[0] =~ "^-")
     Usage();
 }
 
-
 # 先查看是否已存在查询单词
-($word = join("_", @ARGV)) || Usage();
-$result = `cd $word_dir  &&  ls [0-9]*.$word -1 2>/dev/null`;
-@result = split(" ", $result);
+$word = join("_", @ARGV);
+@result = GetWordFile($word);
 if(@result > 1)
 {
     print "**********$COLOR_CYAN @ARGV $COLOR_NONE**********\n";
@@ -159,7 +193,8 @@ if(@result > 1)
     print "$COLOR_NONE\n";
     exit(0);
 }
-elsif($result =~ /([0-9]+).(.+)/)
+$result = "@result";
+if($result =~ /([0-9]+).(.+)/)
 {
     # 输出已存在的记录，并修改使用计数；
     print "<$1>\n";
