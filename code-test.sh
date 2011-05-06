@@ -1,9 +1,9 @@
 #!/bin/bash
 # Rocky 2011-05-06 17:35:41
-# ÎÄ¼þ±àÂë¼ì²â
+# æ–‡ä»¶ç¼–ç æ£€æµ‹
 #
 
-# Ö§¼¼µÄ±àÂëÁÐ±í£¨Ò²¿ÉÒÔ·ÖÎöiconv -lµÄÊä³ö£¬ÔÝ²»×ö£©
+# æ”¯æŠ€çš„ç¼–ç åˆ—è¡¨ï¼ˆä¹Ÿå¯ä»¥åˆ†æžiconv -lçš„è¾“å‡ºï¼Œæš‚ä¸åšï¼‰
 list()
 {
     cat <<eof
@@ -22,15 +22,14 @@ eof
     exit 2
 }
 
-[[ $1 == "" ]] && Usage
+[[ $* == "" ]] && Usage
 
 list | while read code;
 do
-    iconv -f $code $1 >/dev/null 2>&1
+    iconv -f $code "$*" >/dev/null 2>&1
     if [[ $? == 0 ]];
     then
-        echo $code
-        exit 1 
+        printf "%10s -- %s\n" $code "$*"
         exit 0
     fi
 done
