@@ -30,10 +30,8 @@ do
     if [[ $? == 0 ]];
     then
         echo $code
+        exit 1 
         exit 0
     fi
 done
-
-echo coding unknown
-exit 1
 
