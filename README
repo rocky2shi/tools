@@ -6,4 +6,6 @@ color.sh        -- 终端颜色设置
 g2u.sh          -- gb18030转utf8
 u2g.sh          -- utf8转gb18030
 new-file.sh     -- 新建文件
+make-var.sh     -- 调用var.mk查看Makefile中指定的变量
+code-test.sh    -- 文件编码检测
 

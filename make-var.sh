@@ -1,7 +1,7 @@
 #!/bin/bash
 # Rocky 2011-05-03 16:51:54
 #
-# ²é¿´MakefileÖĞ±äÁ¿Öµ
+# æŸ¥çœ‹Makefileä¸­å˜é‡å€¼
 #
 
 [[ $1 == "" ]] && { echo "Usage make-var.sh [d-]make_var"; exit 1;}
