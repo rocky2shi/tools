@@ -22,15 +22,24 @@ eof
     exit 2
 }
 
-[[ $* == "" ]] && Usage
 
-list | while read code;
+
+[[ "$*" == "" ]] && Usage
+
+
+
+# 取出每个文件名
+echo "$*" | tr ' ' '\n' | while read file;
 do
-    iconv -f $code "$*" >/dev/null 2>&1
-    if [[ $? == 0 ]];
-    then
-        printf "%10s -- %s\n" $code "$*"
-        exit 0
-    fi
+    # 测试每种编码
+    list | while read code;
+    do
+        iconv -f $code "$file" >/dev/null 2>&1
+        if [[ $? == 0 ]];
+        then
+            printf "%10s -- %s\n" $code "$file"
+            exit 0
+        fi
+    done
 done
 
