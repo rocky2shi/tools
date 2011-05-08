@@ -22,24 +22,37 @@ eof
     exit 2
 }
 
-
-
-[[ "$*" == "" ]] && Usage
-
-
-
-# 取出每个文件名
-echo "$*" | tr ' ' '\n' | while read file;
-do
+Test()
+{
+    local file
+    file=$1
     # 测试每种编码
     list | while read code;
     do
         iconv -f $code "$file" >/dev/null 2>&1
         if [[ $? == 0 ]];
         then
-            printf "%10s -- %s\n" $code "$file"
-            exit 0
+            echo "$code"
+            return 0
         fi
     done
+}
+
+
+[[ "$*" == "" ]] && Usage
+
+
+export ok=0
+
+# 取出每个文件名
+echo "$*" | tr ' ' '\n' | while read file;
+do
+    # 测试每种编码
+    code=$(Test "$file")
+    if [[ "$code" != "" ]]; then
+        printf "%10s -- %s\n" $code "$file"
+    else
+        printf "%10s -- %s\n" "unknown" "$file"
+    fi
 done
 
