@@ -14,6 +14,7 @@
 #   2011-05-02: v1.2.4, 1)修改：单词中含有‘-’时，会输出错误提示；
 #                       2)修改默认单词目录；
 #   2011-05-04: v1.3, 加入--append选项；
+#   2011-05-12: v1.4, 加入--list选项，等；
 #
 
 
@@ -36,7 +37,7 @@ sub Usage
 {
     print <<'eof';
 
- Usage: dict.pl [word|phrase] [--loop|--history|--add title|--del title|--append title]
+ Usage: dict.pl [word|phrase] [选项]
    word|phrase   : 待查询单词或短语
    --loop        : 查询后不退出
    --history     : 显示查询记录
@@ -44,8 +45,9 @@ sub Usage
    --del title   : 删除标题为title的记录；
    --edit title  : 编辑标题为title的记录；
    --append title: 手动添加内容到已存在的词条；
+   --list num    : 以查询计数升序列出已有的最后num个词条，默认num=100
 
-编写：[v1.3] [Rocky 2011-05-04] [rocky2shi@126.com]
+编写：[v1.4] [Rocky 2011-05-12] [rocky2shi@126.com]
 
 eof
     exit(1);
@@ -102,17 +104,21 @@ if($ARGV[0] eq '--add')
     Usage() if($ARGV[1] eq "");
     my @word = @ARGV;
     shift(@word); # 去掉--add
-    my $word_file = "$word_dir/1." . join("_", @word);
-    if(-f $word_file)
+    my $word = join("_", @word);
+    my @tmp = GetWordFile($word);
+    if(@tmp > 0)
     {
         print "此标题词已存在，请换另一标题，或先删除已存在标题（使用--del选项）。\n";
         exit(1);
     }
+    my $word_file = "$word_dir/1.$word";
     print "请输入内容，按Ctrl+D结束输入。\n";
     print "==========================================\n";
     system <<eof;
     echo "**********$COLOR_CYAN @word $COLOR_NONE**********" >$word_file
+    echo -e '$COLOR_QRAY' >>$word_file
     cat - >>$word_file
+    echo  >>$word_file
 eof
     exit(0);
 }
@@ -162,10 +168,23 @@ if($ARGV[0] eq '--append')
     print "==========================================\n";
     system <<eof;
     echo                  >>$word_file
-    echo                  >>$word_file
     echo '###手工添加###' >>$word_file
     cat                   >>$word_file
+    echo                  >>$word_file
 eof
+    exit(0);
+}
+
+# 列出已有词条
+if($ARGV[0] eq '--list')
+{
+    my $num = $ARGV[1] || 100;
+    my $cmd = sprintf<<'eof', $word_dir, $num;
+    cd %s || exit 2;
+    echo '    序号  计数 词条'
+    ls -1 | awk -F. '/^[0-9]+/{printf("%%5s  %%s\n",$1,$2);}' | sort -n | tail -n %d | cat -n
+eof
+    system($cmd);
     exit(0);
 }
 
@@ -207,6 +226,7 @@ if($result =~ /([0-9]+).(.+)/)
 
 eof
     WriteHistory("@ARGV");
+    print "$COLOR_NONE\n";
     exit(0);
 }
 
@@ -300,10 +320,8 @@ eof
     }
 
     return <<eof;
-$COLOR_QRAY
 ###爱词霸翻译###
 $result
-$COLOR_NONE
 eof
 }
 
@@ -317,10 +335,8 @@ sub google
     my $text = `$cmd`;
     $text =~ /\"responseData\": {\"translatedText\":\"([^\"\']+)\"}/;
     return <<eof;
-$COLOR_QRAY
 ###Google翻译###
  $1
-$COLOR_NONE
 eof
 }
 
@@ -332,6 +348,7 @@ my $google = google();
 
 $word_str .=<<eof;
 **********$COLOR_CYAN @ARGV $COLOR_NONE**********
+$COLOR_QRAY
 $iciba
 $google
 eof
