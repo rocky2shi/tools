@@ -15,6 +15,7 @@
 #                       2)修改默认单词目录；
 #   2011-05-04: v1.3, 加入--append选项；
 #   2011-05-12: v1.4, 加入--list选项，等；
+#   2011-05-26: v1.5, 加入单词读音
 #
 
 
@@ -25,6 +26,7 @@ $COLOR_QRAY  = "\e[30;1m";
 $COLOR_RED   = "\e[31;1m";
 $COLOR_NONE  = "\e[0m";
 $word_dir = $ENV{DICT_DATA} || "$ENV{HOME}/.dict"; # 优先使用环境变量的值
+$mp3_dir = "$word_dir/mp3";
 $dict_tmp = "/tmp";
 $history = "$word_dir/history.txt";
 $tmp_file = "$dict_tmp/.dict_tmp";
@@ -47,7 +49,7 @@ sub Usage
    --append title: 手动添加内容到已存在的词条；
    --list num    : 以查询计数升序列出已有的最后num个词条，默认num=100
 
-编写：[v1.4] [Rocky 2011-05-12] [rocky2shi@126.com]
+编写：[v1.5] [Rocky 2011-05-26] [rocky2shi@126.com]
 
 eof
     exit(1);
@@ -73,6 +75,45 @@ sub GetWordFile
     return split(" ", $result);
 }
 
+# 下载读音mp3文件
+sub mp3
+{
+    # 对于多个短语，词间以‘%20’分隔；
+    my $word = join("%20", @ARGV) || Usage();
+    my $mp3_file = "$word_dir/mp3/@ARGV.mp3";
+
+    # 先查看本地是否已有此读音文件，不存在则下载；
+    if(not -f $mp3_file)
+    {
+        my $cmd = "w3m -no-cookie -dump_source http://www.iciba.com/$word";
+        my $text = `$cmd`;
+
+        # 有多个词时，不下载；
+        if($text =~ /请尝试查询/)
+        {
+            return;
+        }
+
+        # 取mp3文件url，只取标准读音；
+        # asplay('http://res.iciba.com/resource/amp3/0/0/73/1b/731b886d80d2ea138da54d30f43b2005.mp3')
+        if($text =~ /'(http:\/\/[^']+.mp3)'/)
+        {
+            my $url = $1;
+            system <<eof;
+            (
+                wget '$url' -O '$mp3_file' ;
+                gst-launch filesrc location="$mp3_file" ! decodebin ! alsasink ;
+            ) >/dev/null 2>\&1 \&
+eof
+            return;
+        }
+    }
+
+    # 调播放命令
+    system <<eof;
+    gst-launch filesrc location="$mp3_file" ! decodebin ! alsasink >/dev/null \&
+eof
+}
 
 
 # 循环查词（循环调用本脚本）
@@ -83,13 +124,25 @@ if($ARGV[0] eq '--loop')
     echo
     while true;
     do
-        read -p '>>> ' -e word;
+        echo -ne "\e[0m"
+        read -p ">>> " -e word;
         [[ "${word}" != "" ]] && dict.pl ${word[*]};
     done
 eof
     print "\n";
     exit(0);
 }
+
+
+# 初始化
+if(not -d $mp3_dir)
+{
+    system("mkdir -p $mp3_dir");
+}
+
+
+
+
 
 # 显示查询记录
 if($ARGV[0] eq '--history')
@@ -223,8 +276,8 @@ if($result =~ /([0-9]+).(.+)/)
     cat $src_file
     mv $src_file $dest_file
     touch $dest_file
-
 eof
+    mp3();
     WriteHistory("@ARGV");
     print "$COLOR_NONE\n";
     exit(0);
@@ -362,6 +415,7 @@ if(length($word_str) > 170)
     open(FILE, ">$word_file") || die "$!: $word_file";
     print FILE $word_str;
     close(FILE);
+    mp3();
     WriteHistory("@ARGV");
 }
 else

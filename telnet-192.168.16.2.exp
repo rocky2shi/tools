@@ -1,0 +1,18 @@
+#!/usr/bin/expect
+
+
+
+set timeout 2 
+spawn telnet 192.168.16.2
+expect "*login:" {
+    send "root\r"
+}
+expect "#" {
+    send ". /mmc/mmca1/.system/init/bash.sh\r"
+}
+expect "#" {
+    send ". /mmc/mmca1/.system/init/env.sh\r"
+    send "echo nameserver 202.96.134.133 > /tmp/resolv.conf && mount --bind /tmp/resolv.conf /etc/resolv.conf\r"
+}
+expect eof
+interact
